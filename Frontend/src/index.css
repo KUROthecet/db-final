@@ -1,0 +1,154 @@
+/* 1. KHỞI TẠO TAILWIND */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2. THANH SEARCH MỞ RỘNG - PHONG CÁCH LIỀN MẠCH (SEAMLESS) */
+
+.search-expandable {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  /* SỬA: Trùng màu tuyệt đối với Header để tạo cảm giác Header tự giãn dài ra */
+  background-color: #fdfaf1; 
+  z-index: 40;
+  
+  /* Hiệu ứng ẩn mặc định */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  
+  /* SỬA: Đổ bóng đổ rất nhẹ xuống dưới để tách biệt với phần nội dung bên dưới */
+  box-shadow: 0 15px 20px -10px rgba(74, 93, 78, 0.08);
+  
+  /* Hiệu ứng trượt mượt mà */
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Trạng thái khi mở */
+.search-expandable.active {
+  max-height: 180px; /* Chiều cao vừa vặn, không quá to */
+  opacity: 1;
+  padding: 30px 0;
+  border-bottom: 1px solid rgba(74, 93, 78, 0.05);
+}
+
+.search-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 50px;
+  max-width: 1100px;
+  margin: 0 auto;
+  /* Nội dung trượt nhẹ từ trên xuống */
+  transform: translateY(-10px);
+  transition: transform 0.5s ease;
+}
+
+.search-expandable.active .search-content {
+  transform: translateY(0);
+}
+
+.search-box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 380px;
+}
+
+/* Nhãn tìm kiếm thanh mảnh */
+.search-box label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4a5d4e;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+  margin-left: 15px;
+  opacity: 0.8;
+}
+
+/* Ô nhập liệu: Trắng trên nền kem (Luxury Look) */
+.input-wrapper {
+  position: relative;
+  background-color: #ffffff; /* SỬA: Trắng tinh khôi để nổi bật trên nền kem */
+  border: 1.5px solid rgba(74, 93, 78, 0.1); /* Viền cực mảnh */
+  border-radius: 99px;
+  transition: all 0.3s ease;
+}
+
+/* Hiệu ứng khi click vào ô search */
+.input-wrapper:focus-within {
+  border-color: #4a5d4e; /* Màu xanh thương hiệu */
+  box-shadow: 0 4px 12px rgba(74, 93, 78, 0.08);
+  transform: translateY(-1px);
+}
+
+.input-wrapper input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px 20px;
+  font-size: 15px;
+  color: #333;
+  outline: none;
+}
+
+/* Icon Search bên trong ô input */
+.search-icon-inside {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4a5d4e;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.input-wrapper:focus-within .search-icon-inside {
+  opacity: 1;
+}
+
+/* Vạch kẻ chia giữa 2 vùng search */
+.search-divider {
+  width: 1px;
+  height: 50px;
+  background-color: rgba(74, 93, 78, 0.1);
+}
+
+/* 3. TÙY CHỈNH THANH CUỘN (SCROLLBAR) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #fdfaf1;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a5d4e;
+  border-radius: 10px;
+}
+
+/* 4. ANIMATION CHO CART (GIỮ NGUYÊN) */
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Responsive cho Mobile */
+@media (max-width: 768px) {
+  .search-content {
+    flex-direction: column;
+    gap: 20px;
+    padding: 0 20px;
+  }
+  .search-divider {
+    display: none;
+  }
+  .search-expandable.active {
+    max-height: 350px;
+  }
+}
