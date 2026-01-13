@@ -43,6 +43,9 @@ const AppContent = () => {
   
   // Kiểm tra xem có phải trang Login/Signup không
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  
+  // Kiểm tra xem có phải trang Admin/Employee workspace không
+  const isWorkspacePage = location.pathname === '/admin' || location.pathname === '/employee';
 
   return (
     <>
@@ -55,8 +58,8 @@ const AppContent = () => {
           </Routes>
         </div>
       ) : (
-        // Các trang khác - CÓ Layout đầy đủ
-        <Layout>
+        // Các trang khác - CÓ Layout (với hoặc không có Footer tùy loại trang)
+        <Layout hideFooter={isWorkspacePage}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
