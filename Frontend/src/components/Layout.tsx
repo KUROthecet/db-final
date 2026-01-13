@@ -428,13 +428,22 @@ export const Footer = () => (
   </footer>
 );
 
-export const Layout = ({ children }: React.PropsWithChildren<{}>) => (
+export const Layout = ({ children, hideFooter = false }: React.PropsWithChildren<{ hideFooter?: boolean }>) => (
   <div className="min-h-screen flex flex-col bg-tlj-cream">
     <Navbar />
     <CartDrawer />
     <main className="flex-grow">
       {children}
     </main>
-    <Footer />
+    {!hideFooter && <Footer />}
+  </div>
+);
+
+// Auth Layout - Dành riêng cho trang Login/Signup (KHÔNG có Navbar/Footer)
+export const AuthLayout = ({ children }: React.PropsWithChildren<{}>) => (
+  <div className="min-h-screen flex flex-col bg-tlj-cream">
+    <main className="flex-grow">
+      {children}
+    </main>
   </div>
 );
