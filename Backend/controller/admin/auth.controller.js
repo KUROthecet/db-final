@@ -56,7 +56,7 @@ module.exports.getProfile = async (req, res) => {
         const manager = await Account.findManagerById(id);
         res.json(manager);
     } catch (err) {
-        onsole.error(err);
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
 }
