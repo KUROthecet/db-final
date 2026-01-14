@@ -2,99 +2,119 @@ const pool = require('../config/pool');
 
 class Product {
     static async getAllProducts() {
-        const sql = `
-            SELECT c.name as category_name, c.slug as category_slug, p.id, p.name, p.images, p.price 
-            FROM product p
-            INNER JOIN category c ON p.category_id = c.id 
-            ORDER BY c.name, p.name`;
-        const { rows } = await pool.query(sql);
-        
-        // Dùng reduce thay vì vòng lặp lồng nhau truyền thống
-        return rows.reduce((acc, row) => {
-            let cat = acc.find(c => c.category === row.category_name);
-            if (!cat) {
-                cat = { category: row.category_name, slug: row.category_slug, items: [] };
-                acc.push(cat);
+        // Hàm này thường dùng cho trang chủ khách hàng
+        const query = `
+            SELECT c.name AS cat_name, c.slug, p.id, p.name, p.images, p.price FROM category c
+            JOIN product p ON c.id = p.category_id ORDER BY c.name`;
+        const cat = await pool.query(query);
+        let res = [];
+        for (let i = 0; i < cat.rows.length; i++) {
+            if (i == 0 || cat.rows[i].cat_name != cat.rows[i - 1].cat_name) {
+                let currCat = { category: cat.rows[i].cat_name, slug: cat.rows[i].slug };
+                let items = [];
+                for (let j = i; j < cat.rows.length; j++) {
+                    if (cat.rows[j].cat_name == cat.rows[i].cat_name) {
+                        items.push({
+                            id: cat.rows[j].id,
+                            name: cat.rows[j].name,
+                            image: cat.rows[j].images, // Đã map images -> image
+                            price: cat.rows[j].price,
+                        });
+                        i = j;
+                    } else break;
+                }
+                currCat.items = items;
+                res.push(currCat);
             }
-            cat.items.push({
-                id: row.id,
-                name: row.name,
-                image: row.images,
-                price: row.price
-            });
-            return acc;
-        }, []);
+        }
+        return res;
     }
 
     static async getStock() {
-        const sql = `
-            SELECT p.id, p.name, p.price, p.stock, c.name AS category, p.description, p.images, p.status, p.ingredients, p.nutrition_info 
-            FROM product p JOIN category c ON p.category_id = c.id
-            ORDER BY p.id ASC`;
-        const res = await pool.query(sql);
+        // Hàm này dùng cho tab STOCK của nhân viên
+        // QUAN TRỌNG: Đổi p.images thành p.images AS image
+        const query = `
+            SELECT p.id, p.name, p.price, p.stock, c.name as category, 
+                   p.description, p.images AS image, p.status, 
+                   p.ingredients, p.nutrition_info 
+            FROM product p
+            JOIN category c ON p.category_id = c.id
+            ORDER BY p.id;`
+        const res = await pool.query(query);
         return res.rows;
     }
 
     static async getMenu() {
-        const { rows } = await pool.query(`
-            SELECT p.*, c.name AS category 
-            FROM product p JOIN category c ON p.category_id = c.id
-            ORDER BY p.name`);
-        return rows;
-    }
-
-    static async searchByName(keyword) {
-        const sql = `
-            SELECT p.*, c.name AS category FROM product p
+        // Hàm này dùng cho tab POS của nhân viên
+        // QUAN TRỌNG: Đổi p.images thành p.images AS image
+        const query = `
+            SELECT p.id, p.name, p.price, p.stock, c.name as category, 
+                   p.description, p.images AS image, p.status 
+            FROM product p
             JOIN category c ON p.category_id = c.id
-            WHERE p.name ~* $1 ORDER BY p.name`; // Dùng Regex ~* thay cho ILIKE
-        const res = await pool.query(sql, [keyword]);
+            ORDER BY p.name`;
+        const res = await pool.query(query);
         return res.rows;
     }
 
-    static async addProduct(data) {
-        const client = await pool.connect();
-        try {
-            let catRes = await client.query(`SELECT id FROM category WHERE name = $1`, [data.category]);
-            let catId;
-            if (catRes.rowCount === 0) {
-                const newCat = await client.query(`INSERT INTO category (name, slug) VALUES ($1, $2) RETURNING id`, [data.category, data.slug]);
-                catId = newCat.rows[0].id;
-            } else {
-                catId = catRes.rows[0].id;
-            }
-
-            const sql = `INSERT INTO product (name, category_id, price, provide_id, images, id, stock, description, status, ingredients, nutrition_info) 
-                         VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, $10)`;
-            await client.query(sql, [data.productName, catId, data.price, data.image, data.sku, data.count, data.description, data.status, data.ingredients, data.nutritionInfo]);
-        } finally {
-            client.release();
-        }
-    }
-
-    static async deleteProduct(id) {
-        const { rows } = await pool.query(`DELETE FROM product WHERE id = $1 RETURNING category_id`, [id]);
-        if (rows.length > 0) {
-            const catId = rows[0].category_id;
-            const check = await pool.query(`SELECT 1 FROM product WHERE category_id = $1 LIMIT 1`, [catId]);
-            if (check.rowCount === 0) await pool.query(`DELETE FROM category WHERE id = $1`, [catId]);
-        }
+    static async searchByName(keyword) {
+        // Đổi p.images thành p.images AS image
+        const query = `
+            SELECT p.id, p.name, p.price, p.stock, c.name as category, 
+                   p.description, p.images AS image, p.status 
+            FROM product p
+            JOIN category c ON p.category_id = c.id
+            WHERE p.name ILIKE $1
+            ORDER BY p.name`;
+        const res = await pool.query(query, [`%${keyword}%`]);
+        return res.rows;
     }
 
     static async getProductDetails(id) {
-        const res = await pool.query(
-            `SELECT p.*, c.name AS category FROM product p JOIN category c ON p.category_id = c.id WHERE p.id = $1`, [id]
-        );
+        // Đổi p.images thành p.images AS image
+        const query = `
+            SELECT p.name, p.description, p.images AS image, p.id, p.price, 
+                   c.name AS category, p.stock, p.status, p.ingredients, p.nutrition_info
+            FROM product p
+            JOIN category c ON p.category_id = c.id
+            WHERE p.id = $1`;
+        const res = await pool.query(query, [id]);
         return res.rows[0];
     }
 
-    static async updateProduct(d) {
-        const sql = `
-            UPDATE product SET name = $1, price = $2, description = $3, stock = $4, status = $5, images = $6, ingredients = $7, nutrition_info = $8
-            WHERE id = $9 RETURNING *`;
-        const vals = [d.productName, d.price, d.description, d.count, d.status, d.image, d.ingredients, d.nutritionInfo, d.sku];
-        const res = await pool.query(sql, vals);
-        return res.rows[0];
+    // Các hàm add/delete/update giữ nguyên...
+    static async addProduct(data) {
+        try {
+            let cat_id = await pool.query(`SELECT id FROM category WHERE name = $1`, [data.category]);
+            if(cat_id.rows.length === 0 ) {
+                cat_id = await pool.query(`INSERT INTO category (name, slug) VALUES ($1, $2) RETURNING id`, [data.category, data.slug]); 
+            }
+            const query = `INSERT INTO product (name, category_id, price, provide_id, images, id, stock, description, status, ingredients, nutrition_info) VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`;
+            const values = [data.productName, cat_id.rows[0].id, data.price, 1, data.image, data.sku, data.count, data.description, data.status, data.ingredients, data.nutritionInfo];
+            await pool.query(query, values);
+        } catch (error) { throw error; }
+    }
+
+    static async deleteProduct(id) {
+        try {
+            const category = await pool.query(`SELECT category_id FROM product WHERE id = $1`, [id]);
+            await pool.query(`DELETE FROM product WHERE id = $1`, [id]);
+            const items = await pool.query(`SELECT COUNT(*) FROM product WHERE category_id = $1`, [category.rows[0].category_id]);
+            if(Number(items.rows[0].count) == 0){
+                await pool.query(`DELETE FROM category WHERE id = $1`, [category.rows[0].category_id]);
+            }
+        } catch (error) { throw error; }
+    }
+
+    static async updateProduct(data) {
+        try {
+            const query = `UPDATE product
+                            SET name = $1, price = $2, description = $3, stock = $4, status = $5, images = $6, ingredients = $7, nutrition_info = $8
+                            WHERE id = $9`;
+            const values = [data.productName, data.price, data.description, data.count, data.status, data.image, data.ingredients, data.nutritionInfo, data.sku];
+            await pool.query(query, values);
+        } catch (error) { throw error; }
     }
 }
 
