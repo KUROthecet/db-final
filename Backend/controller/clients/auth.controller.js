@@ -1,81 +1,84 @@
-
 const Account = require("../../model/accountUser.model");
-const pool = require('../../config/pool'); // Import pool to get client
+const pool = require('../../config/pool'); 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// --- ĐĂNG NHẬP KHÁCH HÀNG ---
 module.exports.signin = async (req, res) => {
     try {
         const { email, password } = req.body;
+        // Tìm tài khoản
         const user = await Account.findByEmail(email);
 
-        if (!user){
+        if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Logic check role strictness removed here to allow flexible login 
-        // OR enforce it strictly based on route. 
-        // For /auth/signin (Customer), we expect role 1.
-        if (req.baseUrl.includes('employee') && user.role !== 2) return res.status(403).json({error: "Access denied"});
-        if (req.baseUrl.includes('manager') && user.role !== 3) return res.status(403).json({error: "Access denied"});
-        
-        // Client login allows only customers
-        if (!req.baseUrl.includes('employee') && !req.baseUrl.includes('manager') && user.role !== 1) {
-             return res.status(403).json({ error: 'Please login via Employee Portal' });
+        // Kiểm tra quyền: Chỉ khách hàng (Role 1) mới được login tại đây
+        if (user.role !== 1) {
+            return res.status(403).json({ error: 'Please login via Employee/Manager Portal' });
         }
 
+        // So khớp mật khẩu
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(401).json({ error: 'Invalid password' });
 
-        const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, process.env.JWT_SECRET, {
-            expiresIn: '3h',
-        });
+        // Tạo JWT
+        const token = jwt.sign(
+            { id: user.id, role: user.role, email: user.email }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '3h' }
+        );
 
+        // Lưu Cookie
         res.cookie("token", token, {
-          httpOnly: true,
-          secure: false, // Set true in production
-          sameSite: "strict"
+            httpOnly: true,
+            secure: false, // Set true nếu dùng HTTPS
+            sameSite: "strict"
         });
 
-        res.json({ message: 'Login successful', user: {
-          id: user.id,
-          role: user.role,
-          email: user.email,
-          fullname: user.fullname,
-        } });
+        res.json({ 
+            message: 'Login successful', 
+            user: {
+                id: user.id,
+                role: user.role,
+                email: user.email,
+                fullname: user.fullname,
+            } 
+        });
     } catch (err) {
-        console.error(err);
+        console.error("Signin Error:", err);
         res.status(500).json({ error: 'Server error' });
     }
 }
 
-module.exports.signup = async(req, res) => {
-    const client = await pool.connect(); // GET DEDICATED CLIENT
+// --- ĐĂNG KÝ KHÁCH HÀNG ---
+module.exports.signup = async (req, res) => {
+    const client = await pool.connect(); 
     try {
-        const {name, email, password } = req.body;
+        const { name, email, password } = req.body;
 
         if (!email || !password || !name) {
-            return res.status(400).json({ error: 'Email, password and name are required' });
+            return res.status(400).json({ error: 'All fields are required' });
         }
 
+        // Kiểm tra email tồn tại
         const existing = await Account.findByEmail(email);
         if (existing) {
-            client.release();
-            return res.status(400).json({ error: 'User already exists' });
+            return res.status(400).json({ error: 'Email already in use' });
         }
 
-        await client.query('BEGIN'); // Start Transaction
+        await client.query('BEGIN'); // Bắt đầu Transaction
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Pass client to model methods to ensure they run in the transaction
-        const accountData = { email, password: hashedPassword };
-        const newAccount = await Account.signUp(accountData, client);
+        // 1. Tạo tài khoản (useraccount)
+        const newAccount = await Account.signUp({ email, password: hashedPassword }, client);
         
-        const customerData = { id: newAccount.id, name: name };
-        await Account.addCus(customerData, client);
+        // 2. Tạo hồ sơ khách hàng (customer)
+        await Account.addCus({ id: newAccount.id, name: name }, client);
 
-        await client.query('COMMIT'); // Commit Transaction
+        await client.query('COMMIT'); // Hoàn tất
         
         return res.status(201).json({
             message: 'Signup successful',
@@ -83,76 +86,97 @@ module.exports.signup = async(req, res) => {
         });
 
     } catch (err) {
-        await client.query('ROLLBACK'); // Rollback on error
+        await client.query('ROLLBACK'); // Hủy nếu lỗi
         console.error("Signup Error:", err);
         res.status(500).json({ error: 'Server error during signup' });
     } finally {
-        client.release(); // Release client back to pool
+        client.release(); 
     }
 }
 
-module.exports.updateUser = async(req, res) => {
-  const { id } = req.params;
-  const userId = parseInt(id);
-  
-  if (req.user.id !== userId) {
-    return res.status(403).json({ error: "You can only update your own profile" });
-  }
+// --- CẬP NHẬT THÔNG TIN KHÁCH HÀNG ---
+module.exports.updateUser = async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        
+        // Bảo mật: Chỉ chủ sở hữu được cập nhật
+        if (req.user.id !== userId) {
+            return res.status(403).json({ error: "Unauthorized update" });
+        }
 
-  const data = {
-    name: req.body.fullName || req.body.name, // Support both formats
-    email: req.body.email,
-    id: userId,
-    phone: req.body.phone,
-    address: req.body.address,
-    dob: req.body.dob,
-  }
+        // Chuẩn bị dữ liệu để khớp với Model
+        const updateData = {
+            id: userId,
+            email: req.body.email,
+            phone: req.body.phone,
+            address: req.body.address,
+            dob: req.body.dob,
+            name: req.body.fullName || req.body.fullname // Chấp nhận cả 2 định dạng từ Frontend
+        };
 
-  try {
-    const result = await Account.update(data);
-    res.json(result); 
-  } catch (err) {
-    console.error("Update failed:", err);
-    res.status(500).json({ error: "Server error" });
-  }
+        // Gọi hàm update đã được refactor trong Model
+        const result = await Account.update(updateData);
+
+        // TRẢ VỀ DỮ LIỆU MỚI: Rất quan trọng để Frontend (AuthContext) cập nhật giao diện ngay
+        res.json(result); 
+    } catch (err) {
+        console.error("Update User Error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
 }
 
-module.exports.userProfile = async(req, res) => {
-  const userId = parseInt(req.params.id);
-  if (userId !== req.user.id)
-    return res.status(403).json({ error: "Forbidden" });
+// --- LẤY THÔNG TIN CHI TIẾT ---
+module.exports.userProfile = async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        if (userId !== req.user.id) {
+            return res.status(403).json({ error: "Forbidden" });
+        }
 
-  const user = await Account.findById(userId);
-  if(!user) return res.status(404).json({error: "User not found"});
-  
-  res.json(user);
+        const user = await Account.findById(userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+        
+        res.json(user);
+    } catch (err) {
+        console.error("Get Profile Error:", err);
+        res.status(500).json({ error: 'Server error' });
+    }
 }
 
+// --- ĐĂNG XUẤT ---
 module.exports.logout = async (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "strict"
-  });
-  res.json({ message: "Logged out" });
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict"
+    });
+    res.json({ message: "Logged out" });
 }
 
+// --- ĐỔI MẬT KHẨU ---
 module.exports.changePassword = async (req, res) => {
-  const userId = parseInt(req.params.id);
-  const {currentPassword, newPassword} = req.body;
-  
-  try {
-      const result = await Account.getPassword(userId);
-      if(!result) return res.status(404).json({error: "User not found"});
-      
-      const match = await bcrypt.compare(currentPassword, result.password);
-      if(!match) return res.status(400).json({error: "Incorrect password"});
-      
-      const hashed = await bcrypt.hash(newPassword, 10);
-      await Account.changePassword(userId, hashed);
-      res.json({message: "Password updated"});
-  } catch(e) {
-      console.error(e);
-      res.status(500).json({error: "Server error"});
-  }
+    try {
+        const userId = parseInt(req.params.id);
+        const { currentPassword, newPassword } = req.body;
+
+        if (req.user.id !== userId) {
+            return res.status(403).json({ error: "Unauthorized" });
+        }
+
+        const result = await Account.getPassword(userId);
+        if (!result) return res.status(404).json({ error: "User not found" });
+        
+        // Kiểm tra mật khẩu cũ
+        const match = await bcrypt.compare(currentPassword, result.password);
+        if (!match) return res.status(400).json({ error: "Incorrect current password" });
+        
+        // Hash và lưu mật khẩu mới
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await Account.changePassword(userId, hashed);
+
+        res.json({ message: "Password updated successfully" });
+    } catch (e) {
+        console.error("Change Password Error:", e);
+        res.status(500).json({ error: "Server error" });
+    }
 }
