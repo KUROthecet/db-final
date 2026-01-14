@@ -1,60 +1,44 @@
 const pool = require('../config/pool');
 
 class Revenue {
-    static async getGeneralRevenue(date) {
+    static async getGeneralRevenue(targetDate) {
         try {
-            const q1 = `SELECT COUNT(id) AS total_orders, COALESCE(SUM(total_amount), 0) AS total_revenue
-                        FROM orders
-                        WHERE orderdate = $1 AND status = 'completed'`;
-            const general = await pool.query(q1, [date]);
-            const q2 = `SELECT COALESCE(SUM(ol.quantity), 0) AS total_items
-                        FROM orderline ol
-                        JOIN orders o ON o.id = ol.order_id
-                        WHERE o.orderdate = $1 AND o.status = 'completed';`
-            const items = await pool.query(q2, [date]);
-            const q3 = `SELECT p.name, SUM(ol.quantity) AS sold_quantity FROM orderline ol
-                        JOIN orders o ON o.id = ol.order_id
-                        JOIN product p ON p.id = ol.prod_id
-                        WHERE o.orderdate = $1 AND o.status = 'completed'
-                        GROUP BY p.id, p.name
-                        ORDER BY sold_quantity DESC
-                        LIMIT 5`;
-            const top_items = await pool.query(q3, [date]);
+            const queries = [
+                pool.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_rev 
+                            FROM orders WHERE orderdate = $1 AND status = 'completed'`, [targetDate]),
+                
+                pool.query(`SELECT COALESCE(SUM(ol.quantity), 0) as total_qty 
+                            FROM orderline ol JOIN orders o ON o.id = ol.order_id 
+                            WHERE o.orderdate = $1 AND o.status = 'completed'`, [targetDate]),
+                
+                pool.query(`SELECT p.name, SUM(ol.quantity) as sold 
+                            FROM orderline ol JOIN orders o ON o.id = ol.order_id JOIN product p ON p.id = ol.prod_id 
+                            WHERE o.orderdate = $1 AND o.status = 'completed'
+                            GROUP BY p.id, p.name ORDER BY sold DESC LIMIT 5`, [targetDate])
+            ];
+
+            const [revRes, qtyRes, topRes] = await Promise.all(queries);
+
             return {
-                total_revenue: general.rows[0].total_revenue,
-                total_orders: general.rows[0].total_orders,
-                total_items: items.rows[0].total_items,
-                top: top_items.rows,
-            }
-        } catch (error) {
-            console.error(error);
-            throw error;
+                total_revenue: revRes.rows[0].total_rev,
+                total_orders: revRes.rows[0].total_orders,
+                total_items: qtyRes.rows[0].total_qty,
+                top: topRes.rows.map(r => ({ name: r.name, sold_quantity: r.sold }))
+            };
+        } catch (err) {
+            throw err;
         }
     }
 
-    static async getWeeklyRevenue(startOfWeek, date) {
-        try {
-            const query = `WITH days AS (
-                                SELECT generate_series(
-                                    $1::date,
-                                    $2::date,
-                                    interval '1 day'
-                                )::date AS day
-                            )
-                            SELECT d.day, COALESCE(SUM(o.total_amount), 0) AS revenue
-                            FROM days d
-                            LEFT JOIN orders o
-                            ON o.orderdate = d.day
-                            WHERE status = 'completed' OR status IS NULL
-                            GROUP BY d.day
-                            ORDER BY d.day`;
-            const values = [startOfWeek, date];
-            const res = await pool.query(query, values);
-            return res.rows;
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
+    static async getWeeklyRevenue(start, end) {
+        const sql = `
+            SELECT series.day, COALESCE(SUM(o.total_amount), 0) as revenue
+            FROM generate_series($1::date, $2::date, '1 day'::interval) as series(day)
+            LEFT JOIN orders o ON o.orderdate = series.day AND o.status = 'completed'
+            GROUP BY series.day
+            ORDER BY series.day ASC`;
+        const { rows } = await pool.query(sql, [start, end]);
+        return rows;
     }
 }
 
