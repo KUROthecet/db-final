@@ -51,11 +51,19 @@ cd ../Backend && npm install
 Mở công cụ quản lý PostgreSQL (pgAdmin, DBeaver, hoặc Terminal) và tạo một database mới:
 
 ```sql
+<<<<<<< HEAD
 CREATE DATABASE bakery_db;
 ```
 
 ### 2. Chạy Script khởi tạo bảng
 Chạy toàn bộ nội dung trong file `database.sql` (nằm ở thư mục gốc) vào database `bakery_db` vừa tạo để cấu trúc bảng và dữ liệu mẫu.
+=======
+CREATE DATABASE pane_e_amore;
+```
+
+### 2. Chạy Script khởi tạo bảng
+Chạy toàn bộ nội dung trong file `database_sample.sql` (nằm ở thư mục gốc) vào database `pane_e_amore` (tạo query rồi run) vừa tạo để cấu trúc bảng và dữ liệu mẫu.
+>>>>>>> c76042bd05f32ce866a7c7b8178b3907dca305e7
 
 ---
 
@@ -92,13 +100,21 @@ Bạn cần mở **2 Terminal** riêng biệt tại thư mục gốc của dự 
 
 ### Terminal 1: Chạy Backend (Server API)
 ```bash
+<<<<<<< HEAD
 npm run backend
+=======
+npm run backend/ hoặc cd backend rồi npm run start
+>>>>>>> c76042bd05f32ce866a7c7b8178b3907dca305e7
 ```
 *Server sẽ chạy tại: `http://localhost:5000`*
 
 ### Terminal 2: Chạy Frontend (Client App)
 ```bash
+<<<<<<< HEAD
 npm run frontend
+=======
+npm run frontend/ hoặc cd frontend rồi npm run dev
+>>>>>>> c76042bd05f32ce866a7c7b8178b3907dca305e7
 ```
 *App sẽ chạy tại: `http://localhost:5173`*
 

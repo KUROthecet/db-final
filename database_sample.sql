@@ -123,6 +123,10 @@ INSERT INTO provider (id, name) VALUES (1, 'Pane e Amore Main Factory');
 INSERT INTO category (name, slug) VALUES 
 ('Bread', 'bread'), ('Cakes', 'cakes'), ('Coffee', 'coffee'), ('Milk', 'milk');
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c76042bd05f32ce866a7c7b8178b3907dca305e7
 -- 3.2. Tài khoản Demo (Mật khẩu: 654321) (trong seeder.js làm rồi)
 
 
@@ -233,5 +237,19 @@ VALUES
 (4002, 'Unsweetened Almond Milk', 4, 55000.00, 100, 'active', 1, 'A smooth, plant-based dairy alternative made from roasted almonds with no added sugar.', '/MilkImages/Unsweetened-Almond-Milk.jpg', 'Almond Base (Water, Almonds), Sea Salt, Locust Bean Gum, Gellan Gum', '{"calories": 30, "totalFat": 2.54, "saturatedFat": 0.21, "transFat": 0.01, "totalCarbs": 1.15, "totalSugar": 0.08, "protein": 1.05}'::jsonb), 
 (4003, 'Organic Whole Milk Powder', 4, 185000.00, 100, 'active', 1, 'Convenient and nutritious organic whole milk in powder form, enriched with essential vitamins.', '/MilkImages/Organic-Whole-Milk-Powder.jpg', 'Organic Whole Milk, Soy Lecithin, Vitamin A Palmitate, Vitamin D3', '{"calories": 496, "totalFat": 26.35, "saturatedFat": 16.42, "transFat": 0.88, "totalCarbs": 38.14, "totalSugar": 38.06, "protein": 26.32}'::jsonb), 
 (4004, 'UHT Chocolate Milk', 4, 25000.00, 100, 'active', 1, 'A delicious and ready-to-drink treat combining fresh whole milk with rich cocoa powder.', '/MilkImages/UHT-Chocolate-Milk.jpg', 'Whole Milk, Sugar, Cocoa Powder, Natural Flavors, Stabilizers', '{"calories": 190, "totalFat": 4.85, "saturatedFat": 3.12, "transFat": 0.15, "totalCarbs": 26.42, "totalSugar": 24.18, "protein": 7.85}'::jsonb);
+<<<<<<< HEAD
+=======
+=======
+-- 3.2. Tài khoản Demo (Mật khẩu: 123) (trong seeder.js làm rồi)
+
+
+-- 3.3. Sản phẩm mẫu
+INSERT INTO product (id, name, category_id, price, stock, status, provide_id, description)
+VALUES 
+(101, 'Croissant', 1, 35000, 100, 'active', 1, 'Classic buttery flaky French pastry.'),
+(102, 'Tiramisu Cake', 2, 250000, 20, 'active', 1, 'Authentic Italian coffee-flavored dessert.'),
+(103, 'Arabica Espresso', 3, 45000, 500, 'active', 1, 'Rich and bold espresso shot.');
+>>>>>>> 88d5037a18ec8c471bc2d991014543b11d97a2e3
+>>>>>>> c76042bd05f32ce866a7c7b8178b3907dca305e7
 
 COMMIT;
