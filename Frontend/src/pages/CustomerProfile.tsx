@@ -38,7 +38,9 @@ const CustomerProfile = () => {
         email: currentUser.email || '',
         phone: (currentUser as any).phone || '',
         address: (currentUser as any).address || '',
-        dob: (currentUser as any).dob ? new Date((currentUser as any).dob).toISOString().split('T')[0] : '',
+        dob: (currentUser as any).dob
+          ? new Date((currentUser as any).dob).toISOString().split('T')[0]
+          : '',
       });
     }
   }, [currentUser]);
@@ -52,16 +54,16 @@ const CustomerProfile = () => {
     setErrorMessage('');
     
     try {
-        if (updateUserProfile) {
-            // Đợi hàm updateUserProfile (trong AuthContext) thực hiện gọi API
-            await updateUserProfile(formData);
-            setSuccessMessage('Thông tin đã được cập nhật thành công!');
-            setTimeout(() => setSuccessMessage(''), 4000);
-        }
+      if (updateUserProfile) {
+        // Đợi hàm updateUserProfile (trong AuthContext) thực hiện gọi API
+        await updateUserProfile(formData);
+        setSuccessMessage('Profile updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 4000);
+      }
     } catch (err: any) {
-        setErrorMessage(err.message || 'Cập nhật thất bại. Vui lòng thử lại.');
+      setErrorMessage(err.message || 'Update failed. Please try again.');
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -71,38 +73,41 @@ const CustomerProfile = () => {
     setErrorMessage('');
     
     if (passData.new !== passData.confirm) {
-        setErrorMessage("Mật khẩu mới không khớp nhau!");
-        return;
+      setErrorMessage('New passwords do not match!');
+      return;
     }
 
     setIsSubmitting(true);
     try {
-        // Xác định đúng URL API dựa trên Role của người dùng
-        let url = `/auth/change-password/${currentUser.id}`;
-        if (currentUser.role === Role.EMPLOYEE) url = `/employee/auth/change-password/${currentUser.id}`;
-        if (currentUser.role === Role.MANAGER) url = `/manager/auth/change-password/${currentUser.id}`;
+      // Xác định đúng URL API dựa trên Role của người dùng
+      let url = `/auth/change-password/${currentUser.id}`;
+      if (currentUser.role === Role.EMPLOYEE) url = `/employee/auth/change-password/${currentUser.id}`;
+      if (currentUser.role === Role.MANAGER) url = `/manager/auth/change-password/${currentUser.id}`;
 
-        await axiosClient.post(url, {
-            currentPassword: passData.current,
-            newPassword: passData.new
-        });
+      await axiosClient.post(url, {
+        currentPassword: passData.current,
+        newPassword: passData.new
+      });
 
-        setSuccessMessage('Mật khẩu đã được thay đổi thành công!');
-        setPassData({ current: '', new: '', confirm: '' });
-        setTimeout(() => setSuccessMessage(''), 4000);
+      setSuccessMessage('Password changed successfully!');
+      setPassData({ current: '', new: '', confirm: '' });
+      setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err: any) {
-        const msg = err.response?.data?.error || "Mật khẩu hiện tại không chính xác!";
-        setErrorMessage(msg);
+      const msg = err.response?.data?.error || 'Current password is incorrect!';
+      setErrorMessage(msg);
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const getRoleBadge = (role?: Role) => {
     switch (role) {
-      case Role.MANAGER: return { label: 'Administrator', class: 'bg-red-100 text-red-700 border-red-200' };
-      case Role.EMPLOYEE: return { label: 'Staff Member', class: 'bg-blue-100 text-blue-700 border-blue-200' };
-      default: return { label: 'Valued Customer', class: 'bg-tlj-green/10 text-tlj-green border-tlj-green/20' };
+      case Role.MANAGER:
+        return { label: 'Administrator', class: 'bg-red-100 text-red-700 border-red-200' };
+      case Role.EMPLOYEE:
+        return { label: 'Staff Member', class: 'bg-blue-100 text-blue-700 border-blue-200' };
+      default:
+        return { label: 'Valued Customer', class: 'bg-tlj-green/10 text-tlj-green border-tlj-green/20' };
     }
   };
 
@@ -113,22 +118,22 @@ const CustomerProfile = () => {
       <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
         <div>
           <h1 className="text-4xl font-serif font-bold text-tlj-charcoal">My Account</h1>
-          <p className="text-gray-500 mt-2">Quản lý thông tin cá nhân tại Pane e Amore</p>
+          <p className="text-gray-500 mt-2">Manage your personal information at Pane e Amore</p>
         </div>
         
         <div className="flex flex-col items-end gap-2">
-            {successMessage && (
-              <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200 animate-bounce">
-                <CheckCircle2 size={18} />
-                <span className="text-sm font-bold">{successMessage}</span>
-              </div>
-            )}
-            {errorMessage && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-200 animate-pulse">
-                <AlertCircle size={18} />
-                <span className="text-sm font-bold">{errorMessage}</span>
-              </div>
-            )}
+          {successMessage && (
+            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200 animate-bounce">
+              <CheckCircle2 size={18} />
+              <span className="text-sm font-bold">{successMessage}</span>
+            </div>
+          )}
+          {errorMessage && (
+            <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-200 animate-pulse">
+              <AlertCircle size={18} />
+              <span className="text-sm font-bold">{errorMessage}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -138,9 +143,9 @@ const CustomerProfile = () => {
             <div className="relative inline-block mb-4">
               <div className="w-32 h-32 rounded-full bg-tlj-cream flex items-center justify-center text-tlj-green border-4 border-white shadow-xl overflow-hidden">
                 {currentUser.avatar ? (
-                    <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                    <User size={64} strokeWidth={1.5} />
+                  <User size={64} strokeWidth={1.5} />
                 )}
               </div>
               <button className="absolute bottom-1 right-1 p-2 bg-tlj-green text-white rounded-full shadow-lg hover:scale-110 transition-all">
@@ -148,23 +153,33 @@ const CustomerProfile = () => {
               </button>
             </div>
             
-            <h2 className="text-xl font-bold text-tlj-charcoal">{currentUser.fullName || (currentUser as any).fullname}</h2>
+            <h2 className="text-xl font-bold text-tlj-charcoal">
+              {currentUser.fullName || (currentUser as any).fullname}
+            </h2>
             <div className={`mt-2 inline-block px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold border ${badge.class}`}>
               {badge.label}
             </div>
 
             <nav className="mt-10 space-y-2">
-              <button 
+              <button
                 onClick={() => { setActiveTab('info'); setErrorMessage(''); }}
-                className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'info' ? 'bg-tlj-green text-white shadow-lg shadow-tlj-green/20' : 'text-gray-500 hover:bg-tlj-cream'}`}
+                className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${
+                  activeTab === 'info'
+                    ? 'bg-tlj-green text-white shadow-lg shadow-tlj-green/20'
+                    : 'text-gray-500 hover:bg-tlj-cream'
+                }`}
               >
-                <User size={18} /> Thông tin cá nhân
+                <User size={18} /> Personal Information
               </button>
-              <button 
+              <button
                 onClick={() => { setActiveTab('password'); setErrorMessage(''); }}
-                className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'password' ? 'bg-tlj-green text-white shadow-lg shadow-tlj-green/20' : 'text-gray-500 hover:bg-tlj-cream'}`}
+                className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${
+                  activeTab === 'password'
+                    ? 'bg-tlj-green text-white shadow-lg shadow-tlj-green/20'
+                    : 'text-gray-500 hover:bg-tlj-cream'
+                }`}
               >
-                <Lock size={18} /> Bảo mật & Mật khẩu
+                <Lock size={18} /> Security & Password
               </button>
             </nav>
           </div>
@@ -175,62 +190,84 @@ const CustomerProfile = () => {
             {activeTab === 'info' ? (
               <form onSubmit={handleInfoSubmit} className="p-8 lg:p-10 space-y-8">
                 <div className="border-b border-gray-100 pb-4">
-                    <h3 className="text-2xl font-serif font-bold text-tlj-green">Edit Profile</h3>
-                    <p className="text-sm text-gray-400">Cập nhật thông tin để chúng tôi phục vụ bạn tốt hơn</p>
+                  <h3 className="text-2xl font-serif font-bold text-tlj-green">Edit Profile</h3>
+                  <p className="text-sm text-gray-400">
+                    Update your information so we can serve you better
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Họ và tên</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Full Name
+                    </label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-tlj-green/30" size={18} />
-                      <input 
-                        type="text" required value={formData.fullName}
-                        onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                      <input
+                        type="text"
+                        required
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 focus:border-tlj-green outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email (Không thể sửa)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Email (Read-only)
+                    </label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-tlj-green/30" size={18} />
-                      <input type="email" readOnly value={formData.email} className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-gray-400 italic cursor-not-allowed" />
+                      <input
+                        type="email"
+                        readOnly
+                        value={formData.email}
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-gray-400 italic cursor-not-allowed"
+                      />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Số điện thoại</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Phone Number
+                    </label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-tlj-green/30" size={18} />
-                      <input 
-                        type="text" value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      <input
+                        type="text"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 focus:border-tlj-green outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Ngày sinh</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Date of Birth
+                    </label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-tlj-green/30" size={18} />
-                      <input 
-                        type="date" value={formData.dob}
-                        onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                      <input
+                        type="date"
+                        value={formData.dob}
+                        onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                         className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 focus:border-tlj-green outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Địa chỉ giao hàng</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Delivery Address
+                    </label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-tlj-green/30" size={18} />
-                      <input 
-                        type="text" value={formData.address}
-                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      <input
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 focus:border-tlj-green outline-none"
                       />
                     </div>
@@ -238,57 +275,74 @@ const CustomerProfile = () => {
                 </div>
 
                 <div className="pt-6">
-                  <button 
+                  <button
                     disabled={isSubmitting}
-                    type="submit" 
+                    type="submit"
                     className="bg-tlj-green text-white px-10 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-tlj-charcoal disabled:opacity-50 disabled:cursor-wait transition-all shadow-lg"
                   >
-                    {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
-                    Lưu thay đổi
+                    {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                    Save Changes
                   </button>
                 </div>
               </form>
             ) : (
               <form onSubmit={handlePassSubmit} className="p-8 lg:p-10 space-y-8">
                 <div className="border-b border-gray-100 pb-4">
-                    <h3 className="text-2xl font-serif font-bold text-tlj-green">Security</h3>
-                    <p className="text-sm text-gray-400">Đổi mật khẩu định kỳ để bảo vệ tài khoản của bạn</p>
+                  <h3 className="text-2xl font-serif font-bold text-tlj-green">Security</h3>
+                  <p className="text-sm text-gray-400">
+                    Change your password regularly to protect your account
+                  </p>
                 </div>
 
                 <div className="max-w-md space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">Mật khẩu hiện tại</label>
-                    <input 
-                        type="password" required value={passData.current}
-                        onChange={e => setPassData({...passData, current: e.target.value})}
-                        className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none" 
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={passData.current}
+                      onChange={e => setPassData({ ...passData, current: e.target.value })}
+                      className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">Mật khẩu mới</label>
-                    <input 
-                        type="password" required minLength={6} value={passData.new}
-                        onChange={e => setPassData({...passData, new: e.target.value})}
-                        className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none" 
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={passData.new}
+                      onChange={e => setPassData({ ...passData, new: e.target.value })}
+                      className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">Xác nhận mật khẩu mới</label>
-                    <input 
-                        type="password" required value={passData.confirm}
-                        onChange={e => setPassData({...passData, confirm: e.target.value})}
-                        className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none" 
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={passData.confirm}
+                      onChange={e => setPassData({ ...passData, confirm: e.target.value })}
+                      className="w-full bg-tlj-cream/20 border border-gray-100 rounded-2xl py-3 px-6 focus:border-tlj-green outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="pt-6">
-                  <button 
+                  <button
                     disabled={isSubmitting}
-                    type="submit" 
+                    type="submit"
                     className="bg-tlj-green text-white px-10 py-4 rounded-2xl font-bold hover:bg-tlj-charcoal disabled:opacity-50 transition-all shadow-lg"
                   >
-                    {isSubmitting ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
+                    {isSubmitting ? 'Processing...' : 'Update Password'}
                   </button>
                 </div>
               </form>
