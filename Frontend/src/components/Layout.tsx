@@ -17,6 +17,9 @@ export const Navbar = () => {
   
   // State mới để điều khiển thanh Search mở rộng
   const [isSearchExpandOpen, setIsSearchExpandOpen] = useState(false);
+  
+  // State mới cho User Avatar Dropdown
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Check if user is Admin or Employee (Staff)
   const isAdminOrStaff = currentUser?.role === Role.MANAGER || currentUser?.role === Role.EMPLOYEE;
@@ -99,6 +102,7 @@ export const Navbar = () => {
                 </button>
               )}
 
+              {/* USER SECTION - PHẦN THAY ĐỔI CHÍNH */}
               {!currentUser ? (
                 <div className="hidden sm:flex items-center gap-6">
                   <Link to="/login" className="flex items-center gap-2 text-base font-semibold text-tlj-charcoal hover:text-tlj-green transition-all">
@@ -109,14 +113,73 @@ export const Navbar = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="flex items-center gap-4">
-                  <div className="text-right hidden sm:block border-r border-gray-200 pr-4">
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">Logged in</p>
-                    <p className="text-sm font-bold text-tlj-green">{currentUser.fullName}</p>
-                  </div>
-                  <button onClick={handleLogout} title="Logout" className="text-gray-400 hover:text-red-500 transition-all">
-                    <LogOut size={20} />
+                <div className="relative">
+                  {/* Avatar Circle Button */}
+                  <button 
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 p-1 rounded-full hover:bg-tlj-green/5 transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-tlj-green text-white flex items-center justify-center shadow-md border-2 border-white group-hover:scale-105 transition-transform overflow-hidden">
+                      {currentUser?.avatar ? (
+                        <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon size={20} />
+                      )}
+                    </div>
+                    <div className="hidden md:flex flex-col items-start leading-none">
+                      <span className="text-[10px] text-gray-400 uppercase tracking-tighter">Account</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-bold text-tlj-green">
+                          {currentUser?.fullName ? currentUser.fullName.split(' ').pop() : 'User'}
+                        </span>
+                        <ChevronDown size={14} className={`text-tlj-green transition-transform duration-300 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
                   </button>
+
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <>
+                      {/* Overlay để click ra ngoài thì đóng menu */}
+                      <div className="fixed inset-0 z-[60]" onClick={() => setUserMenuOpen(false)}></div>
+                      
+                      <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-[70]">
+                        <div className="px-4 py-3 border-b border-gray-50 mb-1">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Logged in as</p>
+                          <p className="text-sm font-bold text-tlj-green truncate">{currentUser?.fullName || 'User'}</p>
+                          <p className="text-[9px] text-tlj-charcoal/50 italic">{currentUser?.role}</p>
+                        </div>
+                        
+                        <Link 
+                          to="/profile" 
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-tlj-charcoal hover:bg-tlj-cream hover:text-tlj-green transition-all"
+                        >
+                          <UserIcon size={16} /> My Profile
+                        </Link>
+
+                        {/* Link tới đơn hàng nếu là khách hàng */}
+                        {currentUser?.role === Role.CUSTOMER && (
+                          <Link 
+                            to="/history" 
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-tlj-charcoal hover:bg-tlj-cream hover:text-tlj-green transition-all"
+                          >
+                            <ShoppingBag size={16} /> My Orders
+                          </Link>
+                        )}
+
+                        <div className="border-t border-gray-50 mt-1 pt-1">
+                          <button 
+                            onClick={() => { handleLogout(); setUserMenuOpen(false); }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-all font-semibold"
+                          >
+                            <LogOut size={16} /> Logout
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -274,7 +337,10 @@ export const Navbar = () => {
             )}
             
             {currentUser && (
-              <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-xl font-sans uppercase tracking-widest mt-8 border px-8 py-2 border-white/30">Logout</button>
+              <>
+                <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="text-xl font-serif border-b border-white/20 pb-4 w-full block">My Profile</Link>
+                <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="text-xl font-sans uppercase tracking-widest mt-8 border px-8 py-2 border-white/30">Logout</button>
+              </>
             )}
           </nav>
         </div>
@@ -370,6 +436,7 @@ const CartDrawer = () => {
   );
 };
 
+
 export const Footer = () => (
   <footer className="bg-tlj-green text-white pt-16 pb-8 border-t border-white/10 mt-20">
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
@@ -439,7 +506,6 @@ export const Layout = ({ children, hideFooter = false }: React.PropsWithChildren
   </div>
 );
 
-// Auth Layout - Dành riêng cho trang Login/Signup (KHÔNG có Navbar/Footer)
 export const AuthLayout = ({ children }: React.PropsWithChildren<{}>) => (
   <div className="min-h-screen flex flex-col bg-tlj-cream">
     <main className="flex-grow">
