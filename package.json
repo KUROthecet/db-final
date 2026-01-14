@@ -1,0 +1,15 @@
+
+{
+  "name": "pane-e-amore-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "cd Frontend && npm install && cd ../Backend && npm install",
+    "frontend": "cd Frontend && npm run dev",
+    "backend": "cd Backend && npm run dev",
+    "cleanup": "node cleanup.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
